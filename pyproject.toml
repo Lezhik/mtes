@@ -10,6 +10,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 license = { text = "MIT" }
 dependencies = [
+    "motor>=3.6",
     "pyyaml>=6.0",
 ]
 
@@ -19,6 +20,7 @@ dev = [
     "pytest-asyncio>=0.24",
     "ruff>=0.8",
     "mypy>=1.13",
+    "testcontainers[mongodb]>=4.9",
 ]
 
 [project.scripts]
@@ -34,6 +36,9 @@ packages = ["src/mtes"]
 testpaths = ["tests"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+markers = [
+    "integration: integration tests requiring Docker Testcontainers",
+]
 
 [tool.ruff]
 line-length = 100
