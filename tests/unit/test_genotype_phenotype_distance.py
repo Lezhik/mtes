@@ -36,9 +36,11 @@ def test_phenotype_distance_identical_embeddings() -> None:
     features = PhenotypeFeatures(
         text="winter silence",
         embedding=(1.0, 0.0),
-        punctuation_density_value=0.0,
-        short_clause_ratio_value=1.0,
-        sentiment_shift_value=0.0,
+        punctuation_density_value=constraints.punctuation_density,
+        short_clause_ratio_value=constraints.short_clause_ratio,
+        sentiment_shift_value=constraints.required_sentiment_shift,
     )
-    distance = calculator.phenotype_distance(features, features, constraints_a=constraints, constraints_b=constraints)
+    distance = calculator.phenotype_distance(
+        features, features, constraints_a=constraints, constraints_b=constraints
+    )
     assert distance == pytest.approx(0.0, abs=0.01)
