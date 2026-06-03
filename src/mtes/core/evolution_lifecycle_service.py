@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from typing import Any, Protocol
 
+from mtes.core.bootstrap_report_service import BootstrapReportService
 from mtes.shared.exceptions import MtesError
 from mtes.shared.types import EvolutionStatus
 
@@ -37,6 +38,7 @@ class EvolutionLifecycleService:
     """Manage evolution lifecycle transitions with optional persistence."""
 
     evolution_repository: EvolutionStateRepository | None = None
+    bootstrap_report_service: BootstrapReportService | None = None
     _status: EvolutionStatus = EvolutionStatus.CREATED
     _generation_number: int = 0
     _pause_requested: bool = False
@@ -59,6 +61,8 @@ class EvolutionLifecycleService:
             raise InvalidEvolutionTransitionError(
                 f"Transition {self._status.value} -> {target.value} is not allowed"
             )
+        if target == EvolutionStatus.RUNNING and self.bootstrap_report_service is not None:
+            await self.bootstrap_report_service.assert_latest_allows_evolution()
         self._status = target
         await self._persist_state()
         return self._status
