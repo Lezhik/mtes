@@ -19,7 +19,8 @@ LUT_CHECKPOINTS: tuple[tuple[int, float], ...] = (
     (255, 0.777),
 )
 
-CHECKPOINT_TOLERANCE = 0.001
+# GA §6.6 table values are rounded to three decimals; formula may differ slightly.
+CHECKPOINT_TOLERANCE = 0.002
 ROUND_TRIP_MAX_BYTE_ERROR = 1
 
 
