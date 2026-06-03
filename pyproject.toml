@@ -11,7 +11,10 @@ requires-python = ">=3.13"
 license = { text = "MIT" }
 dependencies = [
     "motor>=3.6",
+    "prometheus-client>=0.21",
     "pyyaml>=6.0",
+    "starlette>=0.41",
+    "uvicorn>=0.32",
 ]
 
 [project.optional-dependencies]
@@ -21,6 +24,7 @@ dev = [
     "ruff>=0.8",
     "mypy>=1.13",
     "testcontainers[mongodb]>=4.9",
+    "httpx>=0.28",
 ]
 
 [project.scripts]
