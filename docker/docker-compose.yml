@@ -1,0 +1,37 @@
+services:
+  mtes-core:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    command: ["mtes-core"]
+    environment:
+      MTES_MONGODB_URI: ${MTES_MONGODB_URI:-mongodb://host.docker.internal:27017/mtes}
+      MTES_CONFIG_PATH: ${MTES_CONFIG_PATH:-/app/config/config.example.yaml}
+    ports:
+      - "${MTES_HEALTH_PORT:-8080}:8080"
+      - "${MTES_METRICS_PORT:-9090}:9090"
+    restart: unless-stopped
+
+  publication-worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    command: ["publication-worker"]
+    environment:
+      MTES_MONGODB_URI: ${MTES_MONGODB_URI:-mongodb://host.docker.internal:27017/mtes}
+      MTES_CONFIG_PATH: ${MTES_CONFIG_PATH:-/app/config/config.example.yaml}
+    depends_on:
+      - mtes-core
+    restart: unless-stopped
+
+  maintenance-worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    command: ["maintenance-worker"]
+    environment:
+      MTES_MONGODB_URI: ${MTES_MONGODB_URI:-mongodb://host.docker.internal:27017/mtes}
+      MTES_CONFIG_PATH: ${MTES_CONFIG_PATH:-/app/config/config.example.yaml}
+    depends_on:
+      - mtes-core
+    restart: unless-stopped
