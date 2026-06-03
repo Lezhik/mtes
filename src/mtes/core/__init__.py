@@ -1,1 +1,1 @@
-"""Workflow orchestration and core engine."""
+"""Core workflow orchestration and engine."""
