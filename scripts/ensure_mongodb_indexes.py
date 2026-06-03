@@ -5,7 +5,9 @@ from __future__ import annotations
 import argparse
 import asyncio
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
+from uuid import uuid4
 
 from mtes.persistence.client import MongoPersistenceClient
 from mtes.persistence.document_context import DocumentContext
@@ -48,9 +50,13 @@ async def run_ensure_mongodb_indexes(
             return 0
 
         ensured = await ensure_mongodb_indexes(database)
+        audit_id = (
+            f"audit_mongodb_index_{resolved_model_id}_"
+            f"{datetime.now(UTC).strftime('%Y%m%dT%H%M%S')}_{uuid4().hex[:8]}"
+        )
         await registry.audit_log.insert_one(
             {
-                "_id": f"audit_mongodb_index_{resolved_model_id}",
+                "_id": audit_id,
                 "event_type": "MONGODB_INDEX_ENSURE",
                 "details": {
                     "model_id": resolved_model_id,
@@ -61,6 +67,7 @@ async def run_ensure_mongodb_indexes(
             }
         )
         print(f"Ensured MongoDB indexes: {', '.join(ensured)}")
+        print(f"Audit event: {audit_id}")
         return 0
     finally:
         await client.close()
