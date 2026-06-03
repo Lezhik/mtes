@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-import sys
 from pathlib import Path
 from typing import Annotated
 
@@ -122,8 +121,31 @@ def telegram_command(ctx: typer.Context) -> None:
 @app.command("report")
 def report_command(ctx: typer.Context) -> None:
     """Generate operational reports (Phase 12)."""
-    _get_context(ctx)
-    raise typer.Exit(exit_codes.GENERAL_ERROR)
+    context = _get_context(ctx)
+
+    async def _generate_reports() -> None:
+        from mtes.core.report_service import (
+            InMemoryReportDataSource,
+            ReportService,
+            default_fixture_snapshot,
+        )
+
+        service = ReportService(
+            InMemoryReportDataSource(default_fixture_snapshot()),
+            output_dir=Path("reports"),
+        )
+        artifacts = await service.generate_reports()
+        payload = {
+            "json_path": str(artifacts.json_path),
+            "html_path": str(artifacts.html_path),
+            "generation_number": artifacts.snapshot.evolution_summary.generation_number,
+        }
+        _emit(context, payload)
+
+    try:
+        _run_async(_generate_reports())
+    except Exception:
+        raise typer.Exit(exit_codes.GENERAL_ERROR) from None
 
 
 @app.command("daemon")

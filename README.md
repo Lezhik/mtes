@@ -3,7 +3,7 @@
 ![Python](https://img.shields.io/badge/Python-3.13%2B-blue)
 ![MongoDB](https://img.shields.io/badge/MongoDB-7%2B-green)
 ![Docker](https://img.shields.io/badge/Docker-Compose-blue)
-![Status](https://img.shields.io/badge/Status-Specification--Phase-orange)
+![Status](https://img.shields.io/badge/Status-MVP--Implementation-yellow)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
 MTES is a specification-first research project investigating whether measurable genotype–phenotype locality can be preserved in an LLM-assisted evolutionary system.
@@ -14,31 +14,15 @@ MTES is a specification-first research project investigating whether measurable 
 
 ## Current Stage
 
-**Specification and design phase.**
+**MVP implementation in progress** on branch `develop`.
 
-Implementation has not yet begun.
+The repository contains normative specifications under `docs/` and a Python 3.13 implementation under `src/mtes/`.
 
-The repository currently contains:
+Implemented areas include persistence, mapping, GA operators, LLM adapters (mock/test), bootstrap calibration, CLI, daemon, Telegram gateway, publication queue, reporting, and maintenance workers.
 
-* architecture specifications
-* software requirements specifications
-* evolutionary system specifications
-* genotype–phenotype mapping specifications
-* bootstrap and calibration procedures
-* operational design documents
+Some operator workflows (live Telegram trial window, production provider calls) still require VPS deployment and manual runbooks.
 
-No functional implementation currently exists.
-
-The command-line examples shown in this README describe the intended future interface defined by the specifications and may not yet be implemented.
-
-MTES should currently be viewed as:
-
-* a research design
-* a specification set
-* an implementation-ready blueprint
-* a future software roadmap
-
-rather than a functional software product.
+See `DEVELOPMENT_PLAN.md` and `docs/acceptance_traceability.md` for remaining acceptance items.
 
 ---
 
@@ -181,15 +165,18 @@ This order prioritizes understanding the research model before operational detai
 
 # Documentation
 
-| Document                                 | Location               |
-| ---------------------------------------- | ---------------------- |
-| Architecture Specification               | docs/Architecture.md   |
-| Data Model Specification                 | docs/DataModel.md      |
-| Genotype–Phenotype Mapping Specification | docs/Mapping.md        |
-| Genetic Algorithm Specification          | docs/GA.md             |
-| LLM Interaction Specification            | docs/LLMInteraction.md |
-| Bootstrap & Calibration Specification    | docs/Bootstrap.md      |
-| Software Requirements Specification      | docs/SRS.md            |
+| Document                                 | Location                                      |
+| ---------------------------------------- | --------------------------------------------- |
+| Architecture Specification               | docs/architecture_specification.md            |
+| Data Model Specification                 | docs/data_model_specification.md              |
+| Genotype–Phenotype Mapping Specification | docs/mapping_specification.md                 |
+| Genetic Algorithm Specification          | docs/genetic_algorithm_specification.md       |
+| LLM Interaction Specification            | docs/llm_interaction_specification.md           |
+| Bootstrap & Calibration Specification    | docs/bootstrap_specification.md               |
+| Software Requirements Specification      | docs/software_requirements_specification.md   |
+| Detailed Design (implementation contract)| docs/detailed_design.md                         |
+| Development Plan                         | DEVELOPMENT_PLAN.md                             |
+| Acceptance traceability (SRS §20)        | docs/acceptance_traceability.md               |
 
 ---
 

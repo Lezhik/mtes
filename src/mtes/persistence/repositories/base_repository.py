@@ -67,6 +67,25 @@ class CollectionRepository:
         self._guard_mutation("delete_one")
         await self._collection.delete_one(query)
 
+    async def delete_many(self, query: dict[str, Any]) -> int:
+        """Delete matching documents; returns deleted count."""
+        self._guard_mutation("delete_many")
+        result = await self._collection.delete_many(query)
+        return int(result.deleted_count)
+
+    async def find_many(
+        self,
+        query: dict[str, Any],
+        *,
+        limit: int = 100,
+        sort: list[tuple[str, int]] | None = None,
+    ) -> list[dict[str, Any]]:
+        cursor = self._collection.find(query)
+        if sort is not None:
+            cursor = cursor.sort(sort)
+        cursor = cursor.limit(limit)
+        return await cursor.to_list(length=limit)
+
     async def insert_correction(self, document: dict[str, Any]) -> str:
         """Insert a new document as correction (append-only collections)."""
         if not self._append_only:

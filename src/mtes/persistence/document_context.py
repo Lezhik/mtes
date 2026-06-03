@@ -18,5 +18,6 @@ class DocumentContext:
         stamped["schema_version"] = self.schema_version
         stamped["experiment_id"] = self.experiment_id
         stamped["run_id"] = self.run_id
-        stamped["created_at"] = datetime.now(UTC).isoformat()
+        if "created_at" not in stamped:
+            stamped["created_at"] = datetime.now(UTC).isoformat()
         return stamped

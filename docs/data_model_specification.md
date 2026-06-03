@@ -823,7 +823,42 @@ Retention decisions SHALL follow behavioral specifications.
 
 ---
 
-# 12. Acceptance Criteria
+# 12. Operational Collections
+
+The following collections support runtime orchestration and are defined in `docs/detailed_design.md` §2.3.3 until fully merged into this document.
+
+| Collection | Purpose | Append-only |
+| ---------- | ------- | ----------- |
+| `bootstrap_reports` | Bootstrap readiness and reproducibility record | yes |
+| `workflow_state` | Workflow FSM persistence | no |
+| `evolution_state` | Evolution lifecycle state | no |
+| `population_members` | Active population membership | no |
+| `publication_queue` | Scheduled and pending publications | no |
+| `daemon_state` | Daemon schedules and queue depths | no |
+
+### bootstrap_reports (authoritative until schema merge)
+
+Required fields:
+
+```text
+bootstrap_version
+dataset_version
+prompt_set_version
+readiness_status   # READY | READY_WITH_WARNINGS | NOT_READY
+reproducibility_record
+```
+
+Optional fields:
+
+```text
+operator_approval
+operator_approval_timestamp
+operator_notes
+```
+
+---
+
+# 13. Acceptance Criteria
 
 The storage model SHALL support:
 
