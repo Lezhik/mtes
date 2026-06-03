@@ -1,0 +1,47 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mtes"
+version = "0.1.0"
+description = "Mutation-Traceable Evolutionary Synthesis"
+readme = "README.md"
+requires-python = ">=3.13"
+license = { text = "MIT" }
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "ruff>=0.8",
+    "mypy>=1.13",
+]
+
+[project.scripts]
+mtes = "mtes.cli.main:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mtes"]
+
+[tool.hatch.build.targets.sdist]
+packages = ["src/mtes"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+packages = ["mtes"]
+mypy_path = "src"

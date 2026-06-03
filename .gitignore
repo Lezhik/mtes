@@ -1,1 +1,36 @@
 /system-query.md
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+.venv/
+venv/
+.env
+
+# Runtime
+logs/
+runtime/
+reports/
+*.pid
+config.yaml
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Test / coverage
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+
+# Secrets
+*.pem
+secrets/

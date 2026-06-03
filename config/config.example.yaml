@@ -1,0 +1,20 @@
+database:
+  connection_string: mongodb://localhost:27017/mtes
+
+daemon:
+  worker_count: 1
+  generation_queue_size: 100
+  publication_queue_size: 100
+  resume_threshold: 50
+
+monitoring:
+  health_port: 8080
+  metrics_port: 9090
+
+metrics:
+  locality_measurement_interval: 100
+
+security:
+  evolution_confirmation_required: true
+  reset_requires_confirmation: true
+  operator_auth_source: environment
