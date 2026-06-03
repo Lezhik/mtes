@@ -90,3 +90,51 @@ class EmbeddingService:
                     self._cache.put(texts[index], vector)
 
         return [vector for vector in results if vector is not None]
+
+    async def find_top_neighbors_in_memory(
+        self,
+        query_text: str,
+        corpus_texts: list[str],
+        *,
+        k: int = 20,
+        use_cache: bool = True,
+    ) -> tuple[str, ...]:
+        """Bootstrap §8.2: rank corpus texts by in-memory cosine similarity."""
+        from mtes.persistence.in_memory_cosine_retrieval import InMemoryCosineRetrieval
+
+        if not corpus_texts:
+            return ()
+        vectors = await self.embed_texts(corpus_texts, use_cache=use_cache)
+        query_vectors = await self.embed_texts([query_text], use_cache=use_cache)
+        query_vector = query_vectors[0]
+        corpus = [
+            (text, text, vector)
+            for text, vector in zip(corpus_texts, vectors, strict=True)
+        ]
+        matches = InMemoryCosineRetrieval().top_k_neighbors(query_vector, corpus, k=k)
+        return tuple(match.label for match in matches)
+
+    async def measure_retrieval_consistency(
+        self,
+        query_text: str,
+        corpus_texts: list[str],
+        *,
+        k: int = 20,
+        run_count: int = 3,
+    ) -> float:
+        """Bootstrap §8.2 retrieval consistency using in-memory cosine ranking."""
+        from mtes.persistence.in_memory_cosine_retrieval import InMemoryCosineRetrieval
+
+        vectors = await self.embed_texts(corpus_texts, use_cache=False)
+        query_vectors = await self.embed_texts([query_text], use_cache=False)
+        query_vector = query_vectors[0]
+        corpus = [
+            (text, text, vector)
+            for text, vector in zip(corpus_texts, vectors, strict=True)
+        ]
+        return InMemoryCosineRetrieval().retrieval_consistency(
+            query_vector,
+            corpus,
+            k=k,
+            run_count=run_count,
+        )

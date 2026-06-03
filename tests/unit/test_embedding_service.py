@@ -1,7 +1,6 @@
 """Tests for embedding service."""
 
 import hashlib
-import math
 
 import pytest
 
@@ -42,27 +41,5 @@ async def test_retrieval_consistency_on_repeated_runs() -> None:
     service = EmbeddingService(adapter)
 
     corpus = ["winter", "silence", "automation", "night"]
-    query = "winter"
-
-    def top_tokens(vectors: dict[str, tuple[float, ...]]) -> tuple[str, ...]:
-        query_vector = vectors[query]
-
-        def cosine(a: tuple[float, ...], b: tuple[float, ...]) -> float:
-            dot = sum(x * y for x, y in zip(a, b, strict=True))
-            norm_a = math.sqrt(sum(x * x for x in a))
-            norm_b = math.sqrt(sum(y * y for y in b))
-            return dot / (norm_a * norm_b) if norm_a and norm_b else 0.0
-
-        ranked = sorted(
-            ((token, cosine(query_vector, vector)) for token, vector in vectors.items() if token != query),
-            key=lambda item: (-item[1], item[0]),
-        )
-        return tuple(token for token, _ in ranked[:3])
-
-    rankings: list[tuple[str, ...]] = []
-    for _ in range(3):
-        vectors_list = await service.embed_texts(corpus, use_cache=False)
-        vectors = dict(zip(corpus, vectors_list, strict=True))
-        rankings.append(top_tokens(vectors))
-
-    assert rankings[0] == rankings[1] == rankings[2]
+    consistency = await service.measure_retrieval_consistency("winter", corpus, k=3, run_count=3)
+    assert consistency == 1.0

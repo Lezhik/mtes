@@ -173,7 +173,7 @@ uv run mtes $MTES_CLI_JSON report
 | `pytest` | `-v` (names), `-vv` (detail), `-s` (stdout) | Pipeline, gateway, maintenance proofs |
 | `mongosh` | Default pretty output | Inspect persisted documents |
 | `curl` | Omit `-s` to see HTTP status | Telegram API smoke tests |
-| `scripts/create_vector_indexes.py` | stdout messages on success | Index creation confirmation |
+| `scripts/ensure_mongodb_indexes.py` | stdout messages on success | Standard B-tree index confirmation |
 | `scripts/run_maintenance.py` | stdout summary line | TTL purge counts |
 
 **Example — verbose pytest for generation proof:**
@@ -338,9 +338,11 @@ uv run pytest tests/integration/test_operational_repositories.py -v
 
 **Pass criteria:** `bootstrap_reports`, `workflow_state`, `publication_queue` repositories accept documents.
 
-### Step B.5 — Embedding model metadata and vector indexes (**PARTIAL**)
+### Step B.5 — Embedding model metadata and MongoDB indexes (**AVAILABLE**)
 
-1. Insert embedding model metadata (example for local embeddings, dimension must match adapter):
+MTES does **not** use Atlas Search or Atlas Vector Search. Semantic retrieval is **in-memory cosine** over embeddings loaded from MongoDB documents.
+
+1. Insert embedding model metadata (dimension must match your embedding adapter):
 
 ```javascript
 // mongosh mtes_manual
@@ -356,16 +358,33 @@ db.embedding_models.insertOne({
 });
 ```
 
-2. Create vector indexes (when Atlas Vector Search or compatible index API is configured):
+2. Ensure **standard MongoDB B-tree indexes** (no vector search indexes):
 
 ```bash
-uv run python scripts/create_vector_indexes.py --config config/config.yaml --dry-run
-uv run python scripts/create_vector_indexes.py --config config/config.yaml
+uv run python scripts/ensure_mongodb_indexes.py --config config/config.yaml --dry-run
+uv run python scripts/ensure_mongodb_indexes.py --config config/config.yaml
 ```
 
-Scripts print progress to stdout (verbose by default). Capture terminal output for evidence.
+3. Verify in-memory retrieval helpers:
 
-**Pass criteria:** `embedding_models` document exists; index script completes without error (or dry-run output reviewed).
+```bash
+uv run pytest tests/unit/test_in_memory_cosine_retrieval.py -v
+uv run pytest tests/unit/test_embedding_service.py::test_retrieval_consistency_on_repeated_runs -v
+```
+
+**MongoDB requirements for in-memory cosine:**
+
+| Setting | Value |
+|---------|-------|
+| Version | MongoDB **7+** |
+| Deployment | Local `mongod`, Docker `mongo:7`, or self-hosted — **Atlas not required** |
+| Atlas Search / Vector Search | **Not used** — do not create `$search` or `vectorSearch` indexes |
+| Connection | `mongodb://localhost:27017/mtes_manual` (or your URI) |
+| RAM | Sufficient to hold embedding corpora loaded for a retrieval batch (default load cap: 10,000 docs) |
+
+Scripts print progress to stdout. Capture terminal output for evidence.
+
+**Pass criteria:** `embedding_models` document exists; index script completes without error; retrieval consistency tests pass.
 
 ### Step B.6 — Maintenance TTL smoke (**AVAILABLE**, requires Docker)
 
@@ -986,3 +1005,4 @@ Approver:
 |---------|------|--------|---------|
 | 1.0 | 2026-06-03 | MTES team | Initial manual testing plan |
 | 1.1 | 2026-06-03 | MTES team | Added CLI verbose/JSON modes and diagnostic flags throughout |
+| 1.2 | 2026-06-03 | MTES team | Replaced Atlas Vector Search with in-memory cosine; MongoDB B-tree indexes only |

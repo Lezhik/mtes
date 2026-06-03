@@ -65,27 +65,31 @@ Corrections SHALL create new documents.
 
 ---
 
-## 2.3 Vector Search Configuration
+## 2.3 Embedding Retrieval Configuration
 
-MongoDB Atlas Vector Search SHALL be used.
+MTES does **not** use MongoDB Atlas Search, Atlas Vector Search, or full-text search indexes.
 
-All vector indexes SHALL use:
+Semantic nearest-neighbor retrieval SHALL run **in application memory** using **cosine similarity** over embedding vectors loaded from MongoDB documents.
 
-```text
-index_type = HNSW
-metric = cosine
-dimension = embedding_models.dimension
-```
+Embeddings SHALL be stored on documents (for example `dictionary_terms.embedding`, `candidate_archive.embedding`, `tweet_archive.embedding`).
 
-Embedding model metadata MUST exist before vector index creation.
+Standard MongoDB **B-tree indexes** SHALL be used for lookup fields (`token`, `genome_id`, `created_at`, etc.).
 
-Index creation scripts SHALL obtain dimensions from:
+Embedding model metadata MUST exist before retrieval validation:
 
 ```text
 embedding_models.dimension
+embedding_models.distance_metric = cosine
 ```
 
 Hardcoded dimensions are prohibited.
+
+Implementation:
+
+```text
+src/mtes/persistence/in_memory_cosine_retrieval.py
+scripts/ensure_mongodb_indexes.py
+```
 
 ---
 
@@ -129,7 +133,7 @@ token UNIQUE
 coordinate
 bucket_id
 dictionary_version
-vector(embedding)
+vector(embedding)   # stored field; similarity computed in-memory
 ```
 
 ---
@@ -461,7 +465,7 @@ selected
 overall_score
 routing_family
 prompt_version
-vector(embedding)
+vector(embedding)   # stored field; similarity computed in-memory
 ```
 
 ---
@@ -638,7 +642,7 @@ Indexes:
 genome_id
 fitness
 evicted
-vector(embedding)
+vector(embedding)   # stored field; similarity computed in-memory
 ```
 
 ---
@@ -690,7 +694,7 @@ VALIDATION_REPAIR
 ARCHIVE_INSERTION
 ARCHIVE_EVICTION
 MIGRATION_EXECUTION
-VECTOR_INDEX_REBUILD
+MONGODB_INDEX_ENSURE
 ```
 
 Example:

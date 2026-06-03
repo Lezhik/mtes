@@ -87,10 +87,14 @@ Python 3.13+
 Required:
 
 ```text
-MongoDB Atlas
+MongoDB 7+
 ```
 
-MongoDB SHALL be treated as an external managed service.
+MongoDB MAY run as a self-hosted instance, Docker container, or any standards-compliant deployment.
+
+MongoDB Atlas Search, Atlas Vector Search, and other Atlas-only features SHALL NOT be required.
+
+Semantic retrieval uses **in-memory cosine similarity** over embeddings loaded from MongoDB documents.
 
 ---
 
@@ -146,7 +150,6 @@ Examples:
 * LLM outage
 * Telegram outage
 * embedding provider outage
-* vector search outage
 
 Failures SHALL remain localized whenever possible.
 
@@ -210,7 +213,7 @@ LLM Adapter Layer   Embedding Layer
                  |
                  v
 
-           MongoDB Atlas
+           MongoDB 7+
 
 
 Monitoring Layer
@@ -354,7 +357,7 @@ Provide embedding services.
 ### Responsibilities
 
 * embedding generation
-* vector search
+* in-memory cosine retrieval
 * embedding provider abstraction
 
 ### Boundaries
@@ -862,7 +865,7 @@ Linux VPS
         +-- Optional Monitoring Stack
 ```
 
-MongoDB Atlas SHALL remain external.
+MongoDB SHALL remain external to application containers when deployed with Docker Compose.
 
 ---
 

@@ -103,7 +103,7 @@ The project goal is the development of MTES (Mutation-Traceable Evolutionary Syn
 
 - Bootstrap pipeline (14 sequential stages) with idempotent `mtes bootstrap`
 - Dictionary construction (5k–50k source pool; MVP active vocabulary 2k–3k tokens per GA)
-- Embedding layer with Atlas Vector Search (HNSW, cosine)
+- Embedding layer with in-memory cosine retrieval over stored embeddings
 - Evolution lifecycle FSM (CREATED→RUNNING→…)
 - Workflow coordinator with persisted state and recovery
 - Global rate limiter across LLM/Telegram providers
@@ -198,7 +198,7 @@ Operator runs `mtes evolution reset --confirm` → generation counter reset, new
 |------|---|---|------------|
 | Locality below 0.45 after provider change | M | H | Recalibration matrix; block production start |
 | Repair leakage dominates fitness | M | H | Diagnostic-first recovery; monitor `mtes_repair_rate` |
-| MongoDB Atlas outage | L | H | Workflow pause; emergency stop; retry 1s/2s/4s |
+| MongoDB outage | L | H | Workflow pause; emergency stop; retry 1s/2s/4s |
 | Dictionary/GA vocabulary mismatch | M | M | Treat GA 2k–3k as active subset of bootstrap pool |
 | Mapping v5.0 vs GA gene count drift | M | M | MVP ships 6 numeric genes; defer `question_probability` |
 | Single-instance workflow race | L | M | Document single-instance constraint; no distributed lock in MVP |
@@ -208,7 +208,7 @@ Operator runs `mtes evolution reset --confirm` → generation counter reset, new
 
 ## 1.9 Assumptions
 
-- ✓ Production database: MongoDB Atlas per Architecture; local MongoDB permitted for development only. `[scope: persistence]`
+- ✓ Production database: MongoDB 7+ (self-hosted, Docker, or managed MongoDB without Atlas Search). `[scope: persistence]`
 - ✓ Cache layer optional at runtime; bootstrap infrastructure check validates cache only when configured. `[scope: bootstrap]`
 - ~ `bootstrap_reports`, `workflow_state`, `population_state`, `publication_queue` collections: required by SRS/Architecture but absent from Data Model v1.0—schemas defined in Section 2.3 of this document. `[assumed]`
 - ✓ Active MVP vocabulary 2,000–3,000 tokens (GA) drawn from larger bootstrap dictionary pool (5,000+). `[scope: dictionary]`
@@ -222,7 +222,7 @@ Operator runs `mtes evolution reset --confirm` → generation counter reset, new
 | Conflict | Source | Resolution | Rationale |
 |----------|--------|------------|-----------|
 | README doc paths vs actual files | A1 README vs repo | Use `docs/*_specification.md` names | Repository is source of truth for paths |
-| MongoDB Atlas required vs localhost in SRS example | A4 Architecture vs A6 SRS | Atlas for production; localhost for dev in `config.yaml` | Architecture deployment target; SRS shows dev ergonomics |
+| MongoDB deployment vs localhost in SRS example | A4 Architecture vs A6 SRS | MongoDB 7+ for production; localhost for dev in `config.yaml` | Architecture deployment target; SRS shows dev ergonomics |
 | Bootstrap requires cache vs Architecture optional cache | A7 Bootstrap §5.2 vs A4 §7.12 | Validate cache if configured; system runs without cache | Fault isolation: optional cache |
 | Bootstrap dictionary min 5,000 vs GA MVP 2,000–3,000 active | A7 §7.3 vs A3 GA §5.1 | Pool ≥ 5k; active evolutionary vocabulary 2k–3k | Pool vs active subset |
 | Mapping v5.0 adds `question_probability` vs GA "exactly six numeric genes" | A2 Mapping v5.0 vs A3 GA §3.1 | MVP: six genes only; question_probability post-MVP | GA explicit MVP baseline |
@@ -243,13 +243,13 @@ No author color/MVP tags in source specifications beyond implicit MVP labels in 
 
 *Context:* Persist genomes, vectors, and workflow state.
 
-*Chosen:* MongoDB Atlas (managed) for production.
+*Chosen:* MongoDB 7+ on VPS (Docker) with in-memory cosine retrieval; no Atlas Search features.
 
 *Alternatives:*
-- Self-hosted MongoDB on VPS — rejected: operational burden on single operator
-- PostgreSQL + pgvector — rejected: spec mandates MongoDB collections and Atlas Vector Search
+- Managed MongoDB without Atlas Search — acceptable if wire protocol compatible
+- PostgreSQL + pgvector — rejected: spec mandates MongoDB collections
 
-*Risks:* Atlas network latency; mitigated by connection pooling and retry policy.
+*Risks:* MongoDB network latency; mitigated by connection pooling, retry policy, and bounded in-memory corpus loads.
 
 ### Fork 2: MVP LLM compiler
 
@@ -293,7 +293,7 @@ No author color/MVP tags in source specifications beyond implicit MVP labels in 
 
 ## 2.1 System context
 
-The development target is creation of MTES, a Python 3.13 asyncio research platform that evolves short text phenotypes from structured genomes with measurable locality. Primary consumers are a research operator (CLI/Telegram) and internal automation (daemon, workers). The stack is Python, MongoDB Atlas, Docker Compose on Linux VPS, LLM and embedding provider adapters, sentence-transformers/spaCy/tiktoken for deterministic metrics, and Prometheus-compatible monitoring. Out of scope: web UI, multi-tenant isolation, and engagement-maximizing optimization. System class: internal research platform, MVP greenfield, event/async workflow driven with CLI surface.
+The development target is creation of MTES, a Python 3.13 asyncio research platform that evolves short text phenotypes from structured genomes with measurable locality. Primary consumers are a research operator (CLI/Telegram) and internal automation (daemon, workers). The stack is Python, MongoDB 7+, Docker Compose on Linux VPS, LLM and embedding provider adapters, sentence-transformers/spaCy/tiktoken for deterministic metrics, and Prometheus-compatible monitoring. Out of scope: web UI, multi-tenant isolation, and engagement-maximizing optimization. System class: internal research platform, MVP greenfield, event/async workflow driven with CLI surface.
 
 ## 2.1.1 System architecture (C4 Container)
 
@@ -314,8 +314,8 @@ The development target is creation of MTES, a Python 3.13 asyncio research platf
 | Fitness Evaluator | Backend | Python | ← Core Engine | → Embedding Layer, Persistence |
 | Publication Engine | Backend | Python asyncio | ← Workflow Coordinator, Daemon | → Telegram Gateway, Persistence |
 | Telegram Gateway | Adapter | Python (python-telegram-bot/grammy pattern) | ← Telegram API (webhook/poll) | → Publication Engine signals, Workflow Coordinator, Monitoring |
-| Persistence Layer | Backend | Python (Motor/pymongo async) | ← All internal services | → MongoDB Atlas (Mongo wire protocol) |
-| MongoDB Atlas | Database | MongoDB 7+ | ← Persistence | — |
+| Persistence Layer | Backend | Python (Motor/pymongo async) | ← All internal services | → MongoDB 7+ |
+| MongoDB | Database | MongoDB 7+ | ← Persistence | — |
 | Global Rate Limiter | Infrastructure | Python asyncio | ← LLM, Telegram, Embedding adapters | — |
 | Maintenance Worker | Worker | Python asyncio / container | ← Scheduler | → Persistence, Telegram Gateway, Embedding |
 | Prometheus | External | Scraping | ← HTTP Observability GET /metrics | — |
@@ -338,7 +338,7 @@ graph LR
   GA --> Persist
   Val --> LLM
   Fit --> Emb
-  Persist --> Mongo[(MongoDB Atlas)]
+  Persist --> Mongo[(MongoDB 7+)]
   WC --> Pub[Publication Engine]
   Pub --> TG[Telegram Gateway]
   TG --> TAPI[Telegram API]
@@ -357,7 +357,7 @@ Not applicable. MTES MVP has no web or mobile UI. CLI and JSON/human stdout only
 
 ### 2.3.1 Global rules (from Data Model Spec)
 
-All core documents include: `schema_version`, `experiment_id`, `run_id`, `created_at`. Immutable append-only: `genomes`, `mutation_history`, `candidate_archive`, `validation_records`, `fitness_records`, `tweet_archive`, `audit_log`. Vector indexes: HNSW, cosine, dimension from `embedding_models.dimension`.
+All core documents include: `schema_version`, `experiment_id`, `run_id`, `created_at`. Immutable append-only: `genomes`, `mutation_history`, `candidate_archive`, `validation_records`, `fitness_records`, `tweet_archive`, `audit_log`. Embeddings stored on documents; cosine similarity computed in-memory; `embedding_models.dimension` required for validation.
 
 ### 2.3.2 Specification collections (summary)
 
@@ -374,7 +374,7 @@ All core documents include: `schema_version`, `experiment_id`, `run_id`, `create
 | validation_records | passes, failed_checks, repair_attempts | |
 | fitness_records | fitness, novelty, distances, formula_version | candidate-level |
 | tweet_archive | text, generation_snapshot, embedding, evicted | published output |
-| embedding_models | dimension, distance_metric | required before vector index |
+| embedding_models | dimension, distance_metric | required before in-memory retrieval validation |
 | audit_log | event_type, details | LLM/validation/archive events |
 | system_events | severity, event_type, message | infra lifecycle |
 
@@ -588,8 +588,8 @@ Not applicable (no UI).
 | Async | asyncio + Motor | Async-first architecture |
 | CLI | Typer | Typed CLI, `--json` support |
 | HTTP | uvicorn + Starlette/FastAPI | Lightweight health/metrics |
-| Database | MongoDB Atlas 7+ | Spec + vector search |
-| Embeddings | sentence-transformers / provider API | Mapping + Atlas vectors |
+| Database | MongoDB 7+ | Document store + standard B-tree indexes |
+| Embeddings | sentence-transformers / provider API | Mapping + in-memory cosine retrieval |
 | NLP metrics | spaCy `en_core_web_sm`, tiktoken | Anchor + tokenization |
 | LLM | Provider adapters (OpenAI, Anthropic, local) | Provider independence |
 | Telegram | python-telegram-bot or aiogram | Gateway isolation |

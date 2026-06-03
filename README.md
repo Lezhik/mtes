@@ -272,6 +272,72 @@ GPU is not required.
 
 ---
 
+# MongoDB and In-Memory Cosine Retrieval
+
+MTES uses **MongoDB 7+** as a document store only. **MongoDB Atlas is not required.** Atlas Search, Atlas Vector Search, and full-text search indexes are **not used**.
+
+Semantic nearest-neighbor lookup (dictionary expansion, archive retrieval, bootstrap `retrieval_consistency`) runs in **application memory** using **cosine similarity** over embedding vectors loaded from MongoDB documents.
+
+## Connection
+
+```yaml
+# config/config.yaml
+database:
+  connection_string: mongodb://localhost:27017/mtes
+```
+
+Environment override:
+
+```bash
+export MTES_MONGODB_URI="mongodb://localhost:27017/mtes"
+```
+
+Works with:
+
+* local `mongod`
+* Docker: `docker run -d -p 27017:27017 mongo:7`
+* any MongoDB 7+ deployment that exposes the standard wire protocol
+
+**No Atlas-specific connection options or search indexes are needed.**
+
+## Required setup steps
+
+1. Start MongoDB 7+ and create a database (for example `mtes`).
+2. Insert at least one `embedding_models` document before bootstrap retrieval validation:
+
+```javascript
+db.embedding_models.insertOne({
+  _id: "local-e5-manual",
+  version: "1.0",
+  dimension: 384,
+  distance_metric: "cosine"
+});
+```
+
+3. Ensure standard B-tree indexes (not vector search indexes):
+
+```bash
+uv run python scripts/ensure_mongodb_indexes.py --config config/config.yaml
+```
+
+Dry run:
+
+```bash
+uv run python scripts/ensure_mongodb_indexes.py --config config/config.yaml --dry-run
+```
+
+## Operational notes
+
+| Topic | Guidance |
+|-------|----------|
+| Embedding storage | Vectors live in document fields (`embedding` arrays on `dictionary_terms`, `candidate_archive`, `tweet_archive`) |
+| Similarity | Computed in Python via `InMemoryCosineRetrieval` (`src/mtes/persistence/in_memory_cosine_retrieval.py`) |
+| RAM | Size in-memory corpora to available RAM; default load limit is 10,000 documents per retrieval query |
+| Indexes | Standard MongoDB indexes on `token`, `genome_id`, `created_at`, etc. — created by `ensure_mongodb_indexes.py` |
+| Atlas | Optional as a hosted MongoDB provider only if **Search/Vector Search features stay disabled** |
+
+---
+
 ## Optional Local Models
 
 Example local models:

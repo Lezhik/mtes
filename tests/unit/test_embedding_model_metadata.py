@@ -1,10 +1,10 @@
-"""Unit tests for vector index helpers."""
+"""Unit tests for embedding model metadata resolution."""
 
 from unittest.mock import AsyncMock
 
 import pytest
 
-from mtes.persistence.vector_indexes import resolve_embedding_dimension
+from mtes.persistence.embedding_model_metadata import resolve_embedding_dimension
 from mtes.shared.exceptions import ConfigurationError, MongoDbUnavailableError
 
 

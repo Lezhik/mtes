@@ -46,7 +46,7 @@ Implementation sequence for MTES MVP. No calendar dates—order is strict unless
 **Deliverables:**
 - `docker/docker-compose.yml` with services: `mtes-core`, `publication-worker`, `maintenance-worker`
 - Environment variable templates (no secrets committed)
-- MongoDB connection via env (Atlas URI)
+- MongoDB connection via env (`MTES_MONGODB_URI` or `config.yaml`)
 
 **References:** Architecture §14.
 
@@ -94,17 +94,18 @@ Implementation sequence for MTES MVP. No calendar dates—order is strict unless
 
 **Exit criteria:** Workflow state survives simulated restart (read after write).
 
-### Step 1.4 — Vector index bootstrap script
+### Step 1.4 — MongoDB index bootstrap script
 
-**Goal:** Atlas Vector Search indexes from `embedding_models.dimension`.
+**Goal:** Standard B-tree indexes; embedding retrieval via in-memory cosine.
 
 **Deliverables:**
-- `scripts/create_vector_indexes.py` — no hardcoded dimensions
-- Audit log on `VECTOR_INDEX_REBUILD`
+- `scripts/ensure_mongodb_indexes.py` — no hardcoded embedding dimensions
+- `src/mtes/persistence/in_memory_cosine_retrieval.py`
+- Audit log on `MONGODB_INDEX_ENSURE`
 
-**References:** Data Model §2.3.
+**References:** Data Model §2.3, Bootstrap §8.
 
-**Exit criteria:** Script runs against test MongoDB when `embedding_models` seeded.
+**Exit criteria:** `retrieval_consistency` testable on repeated top-20 neighbors without Atlas Search; script runs when `embedding_models` is seeded.
 
 ---
 

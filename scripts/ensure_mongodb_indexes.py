@@ -1,7 +1,4 @@
-"""Create MongoDB Atlas Vector Search indexes from embedding_models.dimension.
-
-Hardcoded embedding dimensions are prohibited (Data Model Specification §2.3).
-"""
+"""Ensure standard MongoDB B-tree indexes (no Atlas Search / Vector Search)."""
 
 from __future__ import annotations
 
@@ -12,13 +9,14 @@ from pathlib import Path
 
 from mtes.persistence.client import MongoPersistenceClient
 from mtes.persistence.document_context import DocumentContext
+from mtes.persistence.embedding_model_metadata import resolve_embedding_dimension
+from mtes.persistence.mongodb_indexes import ensure_mongodb_indexes
 from mtes.persistence.repositories import create_repository_registry
-from mtes.persistence.vector_indexes import create_vector_indexes, resolve_embedding_dimension
 from mtes.shared.config import load_config
 from mtes.shared.exceptions import ConfigurationError, MongoDbUnavailableError
 
 
-async def run_create_vector_indexes(
+async def run_ensure_mongodb_indexes(
     *,
     config_path: Path,
     model_id: str | None,
@@ -28,7 +26,7 @@ async def run_create_vector_indexes(
     context = DocumentContext(
         schema_version="3.4",
         experiment_id="system",
-        run_id="vector_index_bootstrap",
+        run_id="mongodb_index_bootstrap",
     )
 
     client = MongoPersistenceClient(config.database.connection_string)
@@ -43,31 +41,33 @@ async def run_create_vector_indexes(
 
         if dry_run:
             print(
-                f"Dry run: would create vector indexes with model={resolved_model_id} "
-                f"dimension={dimension}"
+                "Dry run: would ensure standard MongoDB indexes "
+                f"(model={resolved_model_id}, dimension={dimension}, "
+                "retrieval=in_memory_cosine)"
             )
             return 0
 
-        created = await create_vector_indexes(database, dimension=dimension)
+        ensured = await ensure_mongodb_indexes(database)
         await registry.audit_log.insert_one(
             {
-                "_id": f"audit_vector_index_{resolved_model_id}",
-                "event_type": "VECTOR_INDEX_REBUILD",
+                "_id": f"audit_mongodb_index_{resolved_model_id}",
+                "event_type": "MONGODB_INDEX_ENSURE",
                 "details": {
                     "model_id": resolved_model_id,
                     "dimension": dimension,
-                    "indexes": created,
+                    "indexes": ensured,
+                    "retrieval_mode": "in_memory_cosine",
                 },
             }
         )
-        print(f"Created vector indexes: {', '.join(created)}")
+        print(f"Ensured MongoDB indexes: {', '.join(ensured)}")
         return 0
     finally:
         await client.close()
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Create MTES vector search indexes")
+    parser = argparse.ArgumentParser(description="Ensure standard MongoDB indexes for MTES")
     parser.add_argument(
         "--config",
         type=Path,
@@ -82,12 +82,12 @@ def main() -> int:
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Resolve dimension only; do not create indexes",
+        help="Validate embedding model metadata only; do not create indexes",
     )
     args = parser.parse_args()
     try:
         return asyncio.run(
-            run_create_vector_indexes(
+            run_ensure_mongodb_indexes(
                 config_path=args.config,
                 model_id=args.model_id,
                 dry_run=args.dry_run,
