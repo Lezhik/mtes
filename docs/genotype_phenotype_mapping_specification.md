@@ -1,4 +1,4 @@
-# MTES v1.0 — Genotype–Phenotype Mapping Specification (MVP)
+# MTES Genotype–Phenotype Mapping Specification v1.0
 
 ## 1. Purpose
 
