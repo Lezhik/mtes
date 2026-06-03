@@ -10,6 +10,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 license = { text = "MIT" }
 dependencies = [
+    "typer>=0.15",
     "motor>=3.6",
     "prometheus-client>=0.21",
     "pyyaml>=6.0",
