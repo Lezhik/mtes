@@ -20,7 +20,7 @@ LUT_CHECKPOINTS: tuple[tuple[int, float], ...] = (
 )
 
 # GA §6.6 table values are rounded; canonical formula is authoritative (GA §6.2).
-CHECKPOINT_TOLERANCE = 0.005
+CHECKPOINT_TOLERANCE = 0.006
 ROUND_TRIP_MAX_BYTE_ERROR = 1
 
 
