@@ -57,3 +57,13 @@ class WorkflowStateRepository(CollectionRepository):
             {"$set": update_fields, "$inc": {"version": 1}},
             return_document=ReturnDocument.AFTER,
         )
+
+    async def find_active_workflows(self) -> list[dict[str, Any]]:
+        cursor = self._collection.find(
+            {"state": {"$in": ["RUNNING", "PAUSED", "PENDING"]}},
+        )
+        return await cursor.to_list(length=1000)
+
+    async def find_by_workflow_id(self, workflow_id: str) -> dict[str, Any] | None:
+        document = await self._collection.find_one({"workflow_id": workflow_id})
+        return document
